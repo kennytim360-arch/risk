@@ -1,0 +1,317 @@
+# RORO Trading System Configuration
+# Copy to settings.yaml and customize
+
+# System Mode
+mode: paper  # Options: live, paper, backtest
+environment: production  # Options: development, production
+
+# Account Configuration
+account:
+  initial_capital: 100000.0
+  currency: USD
+  max_trade_risk: 0.02  # 2% per trade
+  max_daily_risk: 0.03  # 3% daily drawdown limit
+  max_positions: 5
+
+# Data Feed Configuration
+data_feed:
+  primary: yfinance  # Options: yfinance, ib, alphavantage, custom
+  backup: yfinance
+  latency_threshold: 100  # milliseconds
+
+  # Interactive Brokers (if using)
+  ib:
+    host: 127.0.0.1
+    port: 7497  # 7497 for paper, 7496 for live
+    client_id: 1
+
+  # Alpha Vantage (if using)
+  alphavantage:
+    api_key: YOUR_API_KEY_HERE
+
+  # Custom API (if using)
+  custom:
+    endpoint: https://api.example.com
+    api_key: YOUR_API_KEY_HERE
+
+# Instruments Configuration
+instruments:
+  primary:
+    - symbol: ^GSPC  # S&P 500
+      internal_name: US500
+      weight: 0.30
+      data_priority: HIGH
+
+    - symbol: USDJPY=X
+      internal_name: USDJPY
+      weight: 0.25
+      data_priority: HIGH
+
+    - symbol: ^VIX
+      internal_name: VIX
+      weight: 0.25
+      data_priority: MEDIUM
+
+    - symbol: ^TNX  # 10-Year Treasury
+      internal_name: US10Y
+      weight: 0.10
+      data_priority: MEDIUM
+
+    - symbol: DX-Y.NYB  # Dollar Index
+      internal_name: DXY
+      weight: 0.10
+      data_priority: MEDIUM
+
+  secondary:
+    - AUDJPY=X
+    - NZDJPY=X
+    - GC=F  # Gold
+    - CHFJPY=X
+
+# Trading Hours (GMT)
+trading_hours:
+  asian:
+    start: "00:00"
+    end: "08:00"
+    max_size_multiplier: 0.5
+
+  european:
+    start: "08:00"
+    end: "13:00"
+    max_size_multiplier: 1.0
+
+  us_overlap:
+    start: "13:00"
+    end: "16:00"
+    max_size_multiplier: 1.0
+
+  us_only:
+    start: "16:00"
+    end: "21:00"
+    max_size_multiplier: 1.0
+    reduce_time: "19:30"
+    reduce_multiplier: 0.5
+
+  flatten_time: "20:55"
+
+# Regime Detection
+regime:
+  # VIX-based threshold adaptation
+  vix_thresholds:
+    low:
+      range: [0, 15]
+      multiplier: 0.7
+      strong_move: 0.0035  # 0.35%
+      weak_move: 0.0007    # 0.07%
+      time_confirm: 180     # 3 minutes
+
+    normal:
+      range: [15, 20]
+      multiplier: 1.0
+      strong_move: 0.0050  # 0.50%
+      weak_move: 0.0010    # 0.10%
+      time_confirm: 300     # 5 minutes
+
+    elevated:
+      range: [20, 25]
+      multiplier: 1.3
+      strong_move: 0.0065  # 0.65%
+      weak_move: 0.0013    # 0.13%
+      time_confirm: 420     # 7 minutes
+
+    high:
+      range: [25, 100]
+      multiplier: 1.5
+      strong_move: 0.0075  # 0.75%
+      weak_move: 0.0015    # 0.15%
+      time_confirm: 600     # 10 minutes
+
+  # Regime classification requirements
+  strong_risk_on:
+    required_signals: 3  # out of 4
+    vix_decline: 0.05    # 5%
+    us10y_rise: 0.0002   # 2 basis points
+
+  strong_risk_off:
+    required_signals: 3  # out of 4
+    vix_increase: 0.05   # 5%
+    us10y_fall: 0.0003   # 3 basis points
+    dxy_strengthen: 0.003  # 0.3%
+
+  weak_thresholds:
+    min_move: 0.001  # 0.1%
+    vix_range: [0.02, 0.05]  # 2-5%
+
+  transition_zone:
+    correlation_threshold: 0.4
+    min_duration: 900  # 15 minutes
+
+# Correlation Analysis
+correlation:
+  window: 1800  # 30 minutes in seconds
+  update_frequency: 60  # seconds
+
+  health_thresholds:
+    healthy: 0.7
+    degraded: 0.4
+    broken: 0.4
+
+  position_size_multipliers:
+    healthy: 1.0
+    degraded: 0.5
+    broken: 0.0
+
+# Divergence Detection
+divergence:
+  lookback_period: 1800  # 30 minutes
+  min_persistence: 600   # 10 minutes (2 candles)
+
+  bullish:
+    volume_decline: true
+    vix_requirement: "declining_or_flat"
+    confidence_threshold: 0.6
+
+  bearish:
+    volume_decline: true
+    dxy_strengthening: true
+    confidence_threshold: 0.6
+
+  max_consecutive_failures: 3
+  suspension_duration: 3600  # 1 hour
+
+# Position Sizing
+position_sizing:
+  base_risk: 0.02  # 2% of account
+
+  regime_multipliers:
+    strong: 1.0
+    weak: 0.5
+    transition: 0.25
+    divergence: 0.5  # Counter-trend penalty
+
+  vix_adjustment:
+    enabled: true
+    base_vix: 20
+    max_multiplier: 1.5
+
+  max_position_risk: 0.02  # Hard cap at 2%
+
+# Risk Management
+risk_management:
+  # Stop Loss Configuration
+  stops:
+    strong_regime:
+      initial: 0.005  # 0.5%
+      trailing: 0.003  # 0.3%
+      trailing_activation: 0.005  # After 0.5% profit
+
+    weak_regime:
+      initial: 0.003  # 0.3%
+      trailing: 0.002  # 0.2%
+      trailing_activation: 0.003  # After 0.3% profit
+
+    divergence:
+      initial: 0.0025  # 0.25%
+      time_stop: 1800  # 30 minutes
+
+  # Momentum Time Stops
+  momentum_stops:
+    strong_regime_candles: 3  # Exit after 3 candles below VWAP
+    weak_regime_candles: 2    # Exit after 2 candles below VWAP
+
+  # Daily Limits
+  daily_limits:
+    max_losses: 3  # Stop after 3 consecutive losses
+    max_drawdown: 0.03  # 3%
+    reset_time: "00:00"  # GMT
+
+  # News Event Management
+  news_events:
+    high_impact_buffer: 1800  # 30 minutes before/after
+    size_reduction: 0.25  # 25% of normal size
+
+# Dashboard Configuration
+dashboard:
+  update_frequency: 1  # seconds
+  port: 8050
+  host: 0.0.0.0
+  debug: false
+
+  alerts:
+    regime_change: true
+    divergence_detected: true
+    correlation_degraded: true
+    stop_loss_hit: true
+    daily_limit_reached: true
+
+  notifications:
+    telegram:
+      enabled: false
+      bot_token: YOUR_BOT_TOKEN
+      chat_id: YOUR_CHAT_ID
+
+    email:
+      enabled: false
+      smtp_server: smtp.gmail.com
+      smtp_port: 587
+      sender: your_email@gmail.com
+      recipient: your_email@gmail.com
+      password: YOUR_APP_PASSWORD
+
+# Backtesting Configuration
+backtesting:
+  start_date: "2022-01-01"
+  end_date: "2024-12-31"
+
+  slippage:
+    index_cfds:
+      entry: 0.5  # ticks
+      exit: 1.0
+    forex_cfds:
+      entry: 0.3  # pips
+      exit: 0.5
+
+  commissions:
+    per_lot: 4.0  # USD
+
+  data_latency: 75  # milliseconds (50-100 range)
+
+  performance_adjustments:
+    win_rate_reduction: 0.025  # 2.5%
+    rr_reduction: 0.15
+    drawdown_increase: 0.005
+
+# Logging
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  file: logs/roro_system.log
+  rotation: "1 day"
+  retention: "30 days"
+  format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {module}:{function}:{line} | {message}"
+
+# Performance Benchmarks
+benchmarks:
+  strong_regime_win_rate:
+    minimum: 0.60
+    excellence: 0.70
+    fail_point: 0.55
+
+  divergence_success:
+    minimum: 0.55
+    excellence: 0.65
+    fail_point: 0.45
+
+  average_rr:
+    minimum: 1.8
+    excellence: 2.5
+    fail_point: 1.5
+
+  correlation_accuracy:
+    minimum: 0.70
+    excellence: 0.80
+    fail_point: 0.60
+
+  max_daily_drawdown:
+    minimum: 0.025
+    excellence: 0.015
+    fail_point: 0.030

@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Configuration (sensitive)
+config/settings.yaml
+config/api_keys.yaml
+.env
+
+# Data & Logs
+data/live/
+data/cache/
+logs/*.log
+*.log
+
+# Backtesting Results
+backtest_results/
+reports/
+*.pkl
+*.pickle
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Trading Records (sensitive)
+trades/
+positions/
+performance/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# OS
+Thumbs.db
+.Trash-*
